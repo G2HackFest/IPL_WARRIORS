@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/jpg" href="logo.jpg">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Your Matches | Peer Support</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .match-card {
+            transition: all 0.3s ease;
+        }
+        .match-card:hover {
+            transform: translateY(-5px);
+        }
+        .match-percentage {
+            transition: width 1s ease;
+        }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+    </style>
+</head>
+<body class="bg-blue-50 min-h-screen p-4">
+    <div class="max-w-2xl mx-auto">
+        <div class="flex items-center mb-6">
+            <a href="profile.html" class="text-blue-500 hover:text-blue-700 mr-4">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1 class="text-2xl font-bold text-gray-800">Find Your Matches</h1>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6 p-6">
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mr-4">
+                    <i class="fas fa-user text-blue-500 text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="font-semibold">Finding your best matches...</h2>
+                    <p class="text-sm text-gray-500">Analyzing your profile and preferences</p>
+                </div>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div id="progressBar" class="bg-blue-500 h-2.5 rounded-full" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div id="matchesContainer" class="space-y-4 hidden">
+        </div>
+
+        <div id="loadingIndicator" class="text-center py-8">
+            <div class="inline-block text-blue-500 mb-4">
+                <i class="fas fa-circle-notch fa-spin text-4xl"></i>
+            </div>
+            <p class="text-gray-600">Finding peers who share your experiences...</p>
+        </div>
+
+        <div class="mt-6 text-center">
+            <button id="refreshBtn" class="text-blue-500 hover:text-blue-700">
+                <i class="fas fa-sync-alt mr-2"></i> Refresh Matches
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const progressBar = document.getElementById('progressBar');
+            const matchesContainer = document.getElementById('matchesContainer');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            
+            function generateMatches() {
+                const profile = JSON.parse(localStorage.getItem('peerSupportProfile'));
+                if (!profile) {
+                    window.location.href = 'profile.html';
+                    return;
+                }
+                const mockMatches = [
+                    {
+                        id: 'Anon-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
+                        tags: getRandomTags(profile.tags),
+                        availability: getRandomAvailability(profile.availability),
+                        matchScore: 85 + Math.floor(Math.random() * 15),
+                        lastActive: '5 minutes ago'
+                    },
+                    {
+                        id: 'Anon-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
+                        tags: getRandomTags(profile.tags),
+                        availability: getRandomAvailability(profile.availability),
+                        matchScore: 70 + Math.floor(Math.random() * 20),
+                        lastActive: '15 minutes ago'
+                    },
+                    {
+                        id: 'Anon-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
+                        tags: getRandomTags(profile.tags),
+                        availability: getRandomAvailability(profile.availability),
+                        matchScore: 75 + Math.floor(Math.random() * 20),
+                        lastActive: 'Just now'
+                    }
+                ];
+
+                return mockMatches.sort((a, b) => b.matchScore - a.matchScore);
+            }
+
+            function getRandomTags(userTags) {
+                const shuffled = [...userTags].sort(() => 0.5 - Math.random());
+                const selected = shuffled.slice(0, 1 + Math.floor(Math.random() * 2));
+                
+                const allTags = ['anxiety', 'depression', 'stress', 'loneliness', 'grief', 'other'];
+                const remainingTags = allTags.filter(tag => !userTags.includes(tag));
+                if (remainingTags.length > 0 && Math.random() > 0.5) {
+                    selected.push(remainingTags[Math.floor(Math.random() * remainingTags.length)]);
+                }
+                
+                return selected;
+            }
+
+            function getRandomAvailability(userAvailability) {
+                const shuffled = [...userAvailability].sort(() => 0.5 - Math.random());
+                return shuffled.slice(0, 1 + Math.floor(Math.random() * 2));
+            }
+
+            function displayMatches(matches) {
+                matchesContainer.innerHTML = '';
+                
+                matches.forEach(match => {
+                    const matchCard = document.createElement('div');
+                    matchCard.className = 'match-card bg-white rounded-xl shadow-md overflow-hidden p-6';
+                    
+                    matchCard.innerHTML = `
+                        <div class="flex items-start mb-4">
+                            <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mr-4">
+                                <i class="fas fa-user-secret text-blue-500 text-xl"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-center mb-1">
+                                    <h3 class="font-semibold">${match.id}</h3>
+                                    <span class="text-sm font-medium text-blue-500">${match.matchScore}% match</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2 mb-3">
+                                    <div class="bg-blue-500 h-2 rounded-full match-percentage" style="width: ${match.matchScore}%"></div>
+                                </div>
+                                <div class="flex flex-wrap gap-2 mb-3">
+                                    ${match.tags.map(tag => `
+                                        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">${tag.charAt(0).toUpperCase() + tag.slice(1)}</span>
+                                    `).join('')}
+                                </div>
+                                <div class="flex items-center text-sm text-gray-500">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    <span class="mr-4">${match.lastActive}</span>
+                                    <i class="fas fa-calendar-day mr-1"></i>
+                                    <span>${match.availability.join(', ')}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex space-x-3">
+                            <button class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition duration-300">
+                                <i class="fas fa-comment-dots mr-2"></i> Chat
+                            </button>
+                            <button class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-lg transition duration-300">
+                                <i class="fas fa-user-plus mr-2"></i> Connect
+                            </button>
+                        </div>
+                    `;
+                    
+                    matchCard.querySelector('button:first-child').addEventListener('click', function() {
+                        localStorage.setItem('currentChatPeer', JSON.stringify({
+                            id: match.id,
+                            tags: match.tags
+                        }));
+                        window.location.href = 'chat.html';
+                    });
+                    
+                    matchesContainer.appendChild(matchCard);
+                });
+                
+                loadingIndicator.classList.add('hidden');
+                matchesContainer.classList.remove('hidden');
+            }
+            
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 5;
+                progressBar.style.width = `${progress}%`;
+                
+                if (progress >= 100) {
+                    clearInterval(progressInterval);
+                    setTimeout(() => {
+                        const matches = generateMatches();
+                        displayMatches(matches);
+                    }, 500);
+                }
+            }, 100);
+
+            document.getElementById('refreshBtn').addEventListener('click', function() {
+                progressBar.style.width = '0%';
+                matchesContainer.classList.add('hidden');
+                loadingIndicator.classList.remove('hidden');
+                
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += 10;
+                    progressBar.style.width = `${progress}%`;
+                    
+                    if (progress >= 100) {
+                        clearInterval(progressInterval);
+                        setTimeout(() => {
+                            const matches = generateMatches();
+                            displayMatches(matches);
+                        }, 500);
+                    }
+                }, 100);
+            });
+        });
+    </script>
+</body>
+</html>

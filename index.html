@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/jpg" href="logo.jpg">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peer Support Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .message-in {
+            animation: fadeIn 0.3s ease;
+        }
+        .message-out {
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .typing-indicator {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col h-screen">
+    <div class="bg-white shadow-sm p-4 flex items-center">
+        <a href="matching.html" class="text-blue-500 hover:text-blue-700 mr-4">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+            <i class="fas fa-user-secret text-blue-500"></i>
+        </div>
+        <div class="flex-1">
+            <h2 id="peerName" class="font-semibold">Anonymous Peer</h2>
+            <div id="peerStatus" class="flex items-center text-xs text-gray-500">
+                <span class="w-2 h-2 rounded-full bg-green-500 mr-1"></span>
+                <span>Online</span>
+            </div>
+        </div>
+        <button class="text-gray-500 hover:text-gray-700 ml-2">
+            <i class="fas fa-ellipsis-v"></i>
+        </button>
+    </div>
+    <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3">
+        <div class="message-in flex justify-start">
+            <div class="max-w-xs md:max-w-md bg-white rounded-xl rounded-tl-none px-4 py-2 shadow-sm">
+                <p class="text-gray-800">Hi there! I'm glad we matched. How are you feeling today?</p>
+                <p class="text-xs text-gray-500 text-right mt-1">Just now</p>
+            </div>
+        </div>
+    </div>
+    <div id="typingIndicator" class="typing-indicator bg-white p-3 hidden">
+        <div class="flex items-center">
+            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-2">
+                <i class="fas fa-user-secret text-blue-500 text-sm"></i>
+            </div>
+            <div class="flex space-x-1">
+                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0s"></div>
+                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+            </div>
+        </div>
+    </div>
+    <div class="bg-white border-t p-3">
+        <form id="messageForm" class="flex items-center">
+            <button type="button" class="text-gray-500 hover:text-gray-700 mx-2">
+                <i class="far fa-smile"></i>
+            </button>
+            <input 
+                id="messageInput"
+                type="text" 
+                placeholder="Type your message..." 
+                class="flex-1 border border-gray-300 rounded-full py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                autocomplete="off"
+            >
+            <button type="submit" class="ml-2 w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center hover:bg-blue-600 transition">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageForm = document.getElementById('messageForm');
+            const messageInput = document.getElementById('messageInput');
+            const typingIndicator = document.getElementById('typingIndicator');
+            const peerStatus = document.getElementById('peerStatus');
+            
+            const peerData = JSON.parse(localStorage.getItem('currentChatPeer'));
+            if (peerData) {
+                document.getElementById('peerName').textContent = peerData.id;
+                
+                const tagsText = peerData.tags.map(tag => 
+                    tag.charAt(0).toUpperCase() + tag.slice(1)
+                ).join(', ');
+                
+                peerStatus.innerHTML += `<span class="ml-2">• ${tagsText}</span>`;
+            }
+
+            let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
+            
+            chatHistory.forEach(msg => {
+                addMessage(msg.text, msg.sender, msg.timestamp);
+            });
+            
+            messageForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const messageText = messageInput.value.trim();
+                
+                if (messageText) {
+                    addMessage(messageText, 'out', new Date());
+                    
+                    chatHistory.push({
+                        text: messageText,
+                        sender: 'out',
+                        timestamp: new Date().toISOString()
+                    });
+                    localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+                    
+                    messageInput.value = '';
+                    
+                    setTimeout(() => {
+                        typingIndicator.classList.remove('hidden');
+                        setTimeout(() => {
+                            typingIndicator.classList.add('hidden');
+                            const responses = [
+                                "I understand how that feels.",
+                                "You're not alone in this.",
+                                "That sounds really challenging.",
+                                "I've felt similar things before.",
+                                "Would you like to talk more about that?",
+                                "Thank you for sharing that with me."
+                            ];
+                            const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                            addMessage(randomResponse, 'in', new Date());
+                            chatHistory.push({
+                                text: randomResponse,
+                                sender: 'in',
+                                timestamp: new Date().toISOString()
+                            });
+                            localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+                        }, 1500 + Math.random() * 2000);
+                    }, 500);
+                }
+            });
+
+            function addMessage(text, sender, timestamp) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message-${sender} flex ${sender === 'out' ? 'justify-end' : 'justify-start'}`;
+                
+                const timeString = formatTime(timestamp);
+                
+                messageDiv.innerHTML = `
+                    <div class="max-w-xs md:max-w-md ${sender === 'out' ? 'bg-blue-500 text-white' : 'bg-white'} rounded-xl ${sender === 'out' ? 'rounded-tr-none' : 'rounded-tl-none'} px-4 py-2 shadow-sm">
+                        <p>${text}</p>
+                        <p class="text-xs ${sender === 'out' ? 'text-blue-100' : 'text-gray-500'} text-right mt-1">${timeString}</p>
+                    </div>
+                `;
+                
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+            function formatTime(date) {
+                if (typeof date === 'string') {
+                    date = new Date(date);
+                }
+                let hours = date.getHours();
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12;
+                hours = hours ? hours : 12; 
+                return `${hours}:${minutes} ${ampm}`;
+            }
+            
+            setInterval(() => {
+                if (Math.random() > 0.7) {
+                    const statusDot = peerStatus.querySelector('span:first-child');
+                    const statusText = peerStatus.querySelector('span:nth-child(2)');
+                    
+                    if (statusDot.classList.contains('bg-green-500')) {
+                        statusDot.classList.remove('bg-green-500');
+                        statusDot.classList.add('bg-gray-500');
+                        statusText.textContent = 'Offline';
+                    } else {
+                        statusDot.classList.remove('bg-gray-500');
+                        statusDot.classList.add('bg-green-500');
+                        statusText.textContent = 'Online';
+                    }
+                }
+            }, 10000);
+        });
+    </script>
+</body>
+</html>
